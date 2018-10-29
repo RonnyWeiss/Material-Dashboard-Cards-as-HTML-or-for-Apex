@@ -1,6 +1,6 @@
 var materialCards = (function () {
     "use strict";
-    var scriptVersion = "1.2 .4";
+    var scriptVersion = "1.2.4.1";
     var util = {
         version: "1.0.1",
         escapeHTML: function (str) {
@@ -183,12 +183,13 @@ var materialCards = (function () {
                 /* empty container for new stuff */
                 container.empty();
 
-                /* draw cards and add it to the rows */
+                /* draw cards and add it to the container */
                 if (cardDataJSON.row && cardDataJSON.row.length > 0) {
                     drawCards(cardDataJSON.row, configJSON);
                 } else {
                     container.css("min-height", "");
-                    util.noDataMessage.show(row, noDataFoundMessage);
+
+                    util.noDataMessage.show(container, noDataFoundMessage);
                 }
             }
 
