@@ -1,0 +1,12 @@
+{
+    "brackets-minifier.on-save-project": false,
+    "brackets-minifier.js-project-minify": true,
+    "brackets-minifier.css-project-minify": true,
+    "brackets-minifier.js-custom-path": "build",
+    "brackets-minifier.css-custom-path": "build",
+    "brackets-minifier.project-exclude": "css/font-apex.css<br>data/data.js<br>",
+    "brackets-minifier.concat-js-filename": "materialcards.pkgd",
+    "brackets-minifier.concat-css-filename": "materialcards.pkgd",
+    "brackets-minifier.uglifyjs-options": "{}",
+    "brackets-minifier.cleancss-options": "{}"
+}
