@@ -1,6 +1,6 @@
 var materialCards = (function () {
     "use strict";
-    var scriptVersion = "1.2.5";
+    var scriptVersion = "1.2.6";
     var util = {
         version: "1.0.5",
         isAPEX: function () {
