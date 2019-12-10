@@ -218,7 +218,7 @@ var materialCards = (function () {
             function drawContainer(parent) {
                 var div = $("<div></div>");
                 div.addClass("s-g-container");
-                div.css("min-height", "170px")
+                div.css("min-height", "170px");
                 parent.append(div);
                 return (div);
             }
