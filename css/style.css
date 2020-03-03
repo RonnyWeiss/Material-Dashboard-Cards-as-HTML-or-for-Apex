@@ -79,6 +79,9 @@
     border-radius: 1px;
     padding: 15px;
     background-color: #999999;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
     transition: all .7s ease-out;
 }
 
@@ -186,6 +189,7 @@
     line-height: 56px;
     width: 56px;
     height: 56px;
+    display: block;
 }
 
 .at-card-stats .card-content {

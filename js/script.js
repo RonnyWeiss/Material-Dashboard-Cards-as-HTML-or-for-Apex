@@ -1,8 +1,15 @@
 var materialCards = (function () {
     "use strict";
-    var scriptVersion = "1.2.6";
+    var scriptVersion = "1.3";
     var util = {
-        version: "1.0.5",
+        version: "1.2.5",
+        isDefinedAndNotNull: function (pInput) {
+            if (typeof pInput !== "undefined" && pInput !== null) {
+                return true;
+            } else {
+                return false;
+            }
+        },
         isAPEX: function () {
             if (typeof (apex) !== 'undefined') {
                 return true;
@@ -81,21 +88,22 @@ var materialCards = (function () {
         },
         jsonSaveExtend: function (srcConfig, targetConfig) {
             var finalConfig = {};
+            var tmpJSON = {};
             /* try to parse config json when string or just set */
             if (typeof targetConfig === 'string') {
                 try {
-                    targetConfig = JSON.parse(targetConfig);
+                    tmpJSON = JSON.parse(targetConfig);
                 } catch (e) {
                     console.error("Error while try to parse targetConfig. Please check your Config JSON. Standard Config will be used.");
                     console.error(e);
                     console.error(targetConfig);
                 }
             } else {
-                finalConfig = targetConfig;
+                tmpJSON = targetConfig;
             }
             /* try to merge with standard if any attribute is missing */
             try {
-                finalConfig = $.extend(true, srcConfig, targetConfig);
+                finalConfig = $.extend(true, srcConfig, tmpJSON);
             } catch (e) {
                 console.error('Error while try to merge 2 JSONs into standard JSON if any attribute is missing. Please check your Config JSON. Standard Config will be used.');
                 console.error(e);
@@ -110,6 +118,7 @@ var materialCards = (function () {
                     .css("margin", "12px")
                     .css("text-align", "center")
                     .css("padding", "64px 0")
+                    .css("width", "100%")
                     .addClass("nodatafoundmessage");
 
                 var subDiv = $("<div></div>");
@@ -146,11 +155,26 @@ var materialCards = (function () {
     return {
         /* Initialize function for cards */
         initialize: function (
-            parentID, ajaxID, noDataFoundMessage, udConfigJSON, items2Submit, bindRefreshOnId, escapeRequired) {
+            parentID, ajaxID, noDataFoundMessage, udConfigJSON, items2Submit, bindRefreshOnId, escapeRequired, sanitizeHTML, sanitizeOptions) {
             var stdConfigJSON = {
                 "cardWidth": 4,
                 "refresh": 0
             };
+
+            /* this is the default json for purify js */
+            var sanitizeConfigJSON;
+            var stdSanatizerConfigJSON = {
+                "ALLOWED_ATTR": ["accesskey", "align", "alt", "always", "autocomplete", "autoplay", "border", "cellpadding", "cellspacing", "charset", "class", "dir", "height", "href", "id", "lang", "name", "rel", "required", "src", "style", "summary", "tabindex", "target", "title", "type", "value", "width"],
+                "ALLOWED_TAGS": ["a", "address", "b", "blockquote", "br", "caption", "code", "dd", "div", "dl", "dt", "em", "figcaption", "figure", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i", "img", "label", "li", "nl", "ol", "p", "pre", "s", "span", "strike", "strong", "sub", "sup", "table", "tbody", "td", "th", "thead", "tr", "u", "ul"]
+            };
+
+            if (sanitizeHTML !== false) {
+                if (sanitizeOptions) {
+                    sanitizeConfigJSON = util.jsonSaveExtend(stdSanatizerConfigJSON, sanitizeOptions);
+                } else {
+                    sanitizeConfigJSON = stdSanatizerConfigJSON;
+                }
+            }
 
             /* get parent */
             var parent = $("#" + parentID);
@@ -189,6 +213,25 @@ var materialCards = (function () {
 
             } else {
                 console.log("Can't find parentID: " + parentID);
+            }
+
+            /***********************************************************************
+             **
+             ** function to escape of sanitize html
+             **
+             ***********************************************************************/
+            function escapeOrSanitizeHTML(pHTML) {
+                /* escape html if escape is set */
+                if (escapeRequired !== false) {
+                    return util.escapeHTML(pHTML);
+                } else {
+                    /* if sanitizer is activated sanitize html */
+                    if (sanitizeHTML !== false) {
+                        return DOMPurify.sanitize(pHTML, sanitizeConfigJSON);
+                    } else {
+                        return pHTML;
+                    }
+                }
             }
 
             /************************************************************************
@@ -286,14 +329,11 @@ var materialCards = (function () {
                     var cardNum = 0;
                     $.each(cardData, function (index, objData) {
                         cardNum = cardNum + configJSON.cardWidth;
-                        if (escapeRequired !== false) {
-                            objData.CARD_ICON = util.escapeHTML(objData.CARD_ICON);
-                            objData.CARD_ICON_COLOR = util.escapeHTML(objData.CARD_ICON_COLOR);
-                            objData.CARD_HEADER_STYLE = util.escapeHTML(objData.CARD_HEADER_STYLE);
-                            objData.CARD_TITLE = util.escapeHTML(objData.CARD_TITLE);
-                            objData.CARD_VALUE = util.escapeHTML(objData.CARD_VALUE);
-                            objData.CARD_FOOTER = util.escapeHTML(objData.CARD_FOOTER);
-                        }
+
+                        objData.CARD_TITLE = escapeOrSanitizeHTML(objData.CARD_TITLE);
+                        objData.CARD_VALUE = escapeOrSanitizeHTML(objData.CARD_VALUE);
+                        objData.CARD_FOOTER = escapeOrSanitizeHTML(objData.CARD_FOOTER);
+
 
                         if (objData.CARD_TYPE) {
                             if (objData.CARD_TYPE.toLowerCase() === "icon") {
@@ -318,9 +358,6 @@ var materialCards = (function () {
              **
              ***********************************************************************/
             function drawSmallCard(index, parent, cardData, cardConfig) {
-                /* define card style when nothing is set */
-                var cardStdStyle = 'background: linear-gradient(60deg, hsl(' + (index * 23) % 350 + ', 55%, 60%), hsl(' + (index * 23) % 350 + ', 50%, 60%));box-shadow: 0 12px 20px -10px rgba(230, 230, 230, 0.28), 0 4px 20px 0px rgba(0, 0, 0, 0.12), 0 7px 8px -5px rgba(230, 230, 230, 0.2);';
-
                 /* this html should be added to page */
                 /*
                 <div class="s-g-col-4">
@@ -349,26 +386,34 @@ var materialCards = (function () {
                 var card = $("<div></div>");
                 card.addClass("at-card at-card-stats");
 
-                /* define header for card */
-                var cardHeader = $("<div></div>");
-                cardHeader.addClass("card-header");
-
                 /* add icon to card header */
                 if (cardData.CARD_ICON) {
-                    var icon = $("<i></i>");
-                    icon.addClass("fa " + cardData.CARD_ICON);
+                    /* define card style when nothing is set */
+                    var searchString = "fa-";
+                    var cardHeader = $("<div></div>");
+                    cardHeader.addClass("card-header");
 
-                    var iconColor = (cardData.CARD_ICON_COLOR != undefined && cardData.CARD_ICON_COLOR.length > 0) ? cardData.CARD_ICON_COLOR : 'white';
-                    icon.attr("style", "color:" + iconColor);
+                    var icon = $("<i></i>");
+
+                    /* check if it should be an icon or a background image */
+                    if (cardData.CARD_ICON && cardData.CARD_ICON.substr(0, searchString.length) === searchString) {
+                        var iconColor = (cardData.CARD_ICON_COLOR != undefined && cardData.CARD_ICON_COLOR.length > 0) ? cardData.CARD_ICON_COLOR : 'white';
+                        var cardStdStyle = 'background: linear-gradient(60deg, hsl(' + (index * 23) % 350 + ', 55%, 60%), hsl(' + (index * 23) % 350 + ', 50%, 60%));box-shadow: 0 12px 20px -10px rgba(230, 230, 230, 0.28), 0 4px 20px 0px rgba(0, 0, 0, 0.12), 0 7px 8px -5px rgba(230, 230, 230, 0.2);';
+
+                        icon.addClass("fa " + cardData.CARD_ICON);
+                        icon.css("color", iconColor);
+                        cardHeader.attr("style", cardData.CARD_HEADER_STYLE || cardStdStyle);
+                    } else {
+                        if (util.isDefinedAndNotNull(cardData.CARD_HEADER_STYLE)) {
+                            cardHeader.attr("style", cardData.CARD_HEADER_STYLE);
+                        }
+                        cardHeader.css("background-image", "url(" + cardData.CARD_ICON + ")");
+                    }
 
                     cardHeader.append(icon);
+                    /* append header to cards */
+                    card.append(cardHeader);
                 }
-
-                /* add header styles */
-                cardHeader.attr("style", cardData.CARD_HEADER_STYLE || cardStdStyle);
-
-                /* append header to cards */
-                card.append(cardHeader);
 
                 /* define card body */
                 var cardBody = $("<div></div>");
