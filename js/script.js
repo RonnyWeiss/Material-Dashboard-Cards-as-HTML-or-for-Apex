@@ -1,6 +1,6 @@
 var materialCards = (function () {
     "use strict";
-    var scriptVersion = "1.3";
+    var scriptVersion = "1.3.1";
     var util = {
         version: "1.2.5",
         isDefinedAndNotNull: function (pInput) {
@@ -420,12 +420,23 @@ var materialCards = (function () {
                 cardBody.addClass("card-content");
 
                 /* add title to body */
-                var title = (cardData.CARD_TITLE != undefined) ? cardData.CARD_TITLE : '';
-                cardBody.append('<p class="category">' + title + '</p>');
+                if (util.isDefinedAndNotNull(cardData.CARD_TITLE)) {
+                    var title = $("<p></p>");
+                    title.addClass("category");
+                    title.html(cardData.CARD_TITLE);
+                    cardBody.append(title);
+                    cardHeader.css("padding", "15px");
+                } else {
+                    cardHeader.css("padding", "5px");
+                }
 
                 /* add value to body */
-                var value = (cardData.CARD_VALUE != undefined) ? cardData.CARD_VALUE : '';
-                cardBody.append('<h2 class="title">' + value + '</h2>');
+                var value = $("<h2></h2>");
+                value.addClass("title");
+                if (util.isDefinedAndNotNull(cardData.CARD_VALUE)) {
+                    value.html(cardData.CARD_VALUE);
+                }
+                cardBody.append(value);
 
                 /* append body to card */
                 card.append(cardBody);
