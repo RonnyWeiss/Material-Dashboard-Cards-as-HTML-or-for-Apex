@@ -1,10 +1,20 @@
 var materialCards = (function () {
     "use strict";
-    var scriptVersion = "1.3.1";
     var util = {
-        version: "1.2.5",
+        /**********************************************************************************
+         ** required functions 
+         *********************************************************************************/
+        featureInfo: {
+            name: "APEX Material Cards",
+            info: {
+                scriptVersion: "1.4",
+                utilVersion: "1.3.5",
+                url: "https://github.com/RonnyWeiss",
+                license: "MIT"
+            }
+        },
         isDefinedAndNotNull: function (pInput) {
-            if (typeof pInput !== "undefined" && pInput !== null) {
+            if (typeof pInput !== "undefined" && pInput !== null && pInput != "") {
                 return true;
             } else {
                 return false;
@@ -17,20 +27,51 @@ var materialCards = (function () {
                 return false;
             }
         },
+        varType: function (pObj) {
+            if (typeof pObj === "object") {
+                var arrayConstructor = [].constructor;
+                var objectConstructor = ({}).constructor;
+                if (pObj.constructor === arrayConstructor) {
+                    return "array";
+                }
+                if (pObj.constructor === objectConstructor) {
+                    return "json";
+                }
+            } else {
+                return typeof pObj;
+            }
+        },
         debug: {
-            info: function (str) {
+            info: function () {
                 if (util.isAPEX()) {
-                    apex.debug.info(str);
+                    var i = 0;
+                    var arr = [];
+                    for (var prop in arguments) {
+                        arr[i] = arguments[prop];
+                        i++;
+                    }
+                    arr.push(util.featureInfo);
+                    apex.debug.info.apply(this, arr);
                 }
             },
-            error: function (str) {
+            error: function () {
+                var i = 0;
+                var arr = [];
+                for (var prop in arguments) {
+                    arr[i] = arguments[prop];
+                    i++;
+                }
+                arr.push(util.featureInfo);
                 if (util.isAPEX()) {
-                    apex.debug.error(str);
+                    apex.debug.error.apply(this, arr);
                 } else {
-                    console.error(str);
+                    console.error.apply(this, arr);
                 }
             }
         },
+        /**********************************************************************************
+         ** optinal functions 
+         *********************************************************************************/
         escapeHTML: function (str) {
             if (str === null) {
                 return null;
@@ -59,7 +100,10 @@ var materialCards = (function () {
             }
         },
         loader: {
-            start: function (id) {
+            start: function (id, setMinHeight) {
+                if (setMinHeight) {
+                    $(id).css("min-height", "100px");
+                }
                 if (util.isAPEX()) {
                     apex.util.showSpinner($(id));
                 } else {
@@ -67,6 +111,9 @@ var materialCards = (function () {
                     var faLoader = $("<span></span>");
                     faLoader.attr("id", "loader" + id);
                     faLoader.addClass("ct-loader");
+                    faLoader.css("text-align", "center");
+                    faLoader.css("width", "100%");
+                    faLoader.css("display", "block");
 
                     /* define refresh icon with animation */
                     var faRefresh = $("<i></i>");
@@ -81,7 +128,10 @@ var materialCards = (function () {
                     $(id).append(faLoader);
                 }
             },
-            stop: function (id) {
+            stop: function (id, removeMinHeight) {
+                if (removeMinHeight) {
+                    $(id).css("min-height", "");
+                }
                 $(id + " > .u-Processing").remove();
                 $(id + " > .ct-loader").remove();
             }
@@ -94,43 +144,47 @@ var materialCards = (function () {
                 try {
                     tmpJSON = JSON.parse(targetConfig);
                 } catch (e) {
-                    console.error("Error while try to parse targetConfig. Please check your Config JSON. Standard Config will be used.");
-                    console.error(e);
-                    console.error(targetConfig);
+                    util.debug.error({
+                        "msg": "Error while try to parse targetConfig. Please check your Config JSON. Standard Config will be used.",
+                        "err": e,
+                        "targetConfig": targetConfig
+                    });
                 }
             } else {
-                tmpJSON = targetConfig;
+                tmpJSON = $.extend(true, {}, targetConfig);
             }
             /* try to merge with standard if any attribute is missing */
             try {
-                finalConfig = $.extend(true, srcConfig, tmpJSON);
+                finalConfig = $.extend(true, {}, srcConfig, tmpJSON);
             } catch (e) {
-                console.error('Error while try to merge 2 JSONs into standard JSON if any attribute is missing. Please check your Config JSON. Standard Config will be used.');
-                console.error(e);
-                finalConfig = srcConfig;
-                console.error(finalConfig);
+                finalConfig = $.extend(true, {}, srcConfig);
+                util.debug.error({
+                    "msg": "Error while try to merge 2 JSONs into standard JSON if any attribute is missing. Please check your Config JSON. Standard Config will be used.",
+                    "err": e,
+                    "finalConfig": finalConfig
+                });
             }
             return finalConfig;
         },
-        noDataMessage: {
-            show: function (id, text) {
+        printDOMMessage: {
+            show: function (id, text, icon, color) {
                 var div = $("<div></div>")
                     .css("margin", "12px")
                     .css("text-align", "center")
-                    .css("padding", "64px 0")
-                    .css("width", "100%")
-                    .addClass("nodatafoundmessage");
+                    .css("padding", "35px 0")
+                    .addClass("dominfomessagediv");
 
                 var subDiv = $("<div></div>");
 
                 var subDivSpan = $("<span></span>")
                     .addClass("fa")
-                    .addClass("fa-search")
+                    .addClass(icon || "fa-info-circle-o")
                     .addClass("fa-2x")
                     .css("height", "32px")
                     .css("width", "32px")
                     .css("color", "#D0D0D0")
-                    .css("margin-bottom", "16px");
+                    .css("margin-bottom", "16px")
+                    .css("color", color || "inhherit");
 
                 subDiv.append(subDivSpan);
 
@@ -138,6 +192,9 @@ var materialCards = (function () {
                     .text(text)
                     .css("display", "block")
                     .css("color", "#707070")
+                    .css("text-overflow", "ellipsis")
+                    .css("overflow", "hidden")
+                    .css("white-space", "nowrap")
                     .css("font-size", "12px");
 
                 div
@@ -147,15 +204,44 @@ var materialCards = (function () {
                 $(id).append(div);
             },
             hide: function (id) {
-                $(id).children('.nodatafoundmessage').remove();
+                $(id).children('.dominfomessagediv').remove();
+            }
+        },
+        noDataMessage: {
+            show: function (id, text) {
+                util.printDOMMessage.show(id, text, "fa-search");
+            },
+            hide: function (id) {
+                util.printDOMMessage.hide(id);
+            }
+        },
+        errorMessage: {
+            show: function (id, text) {
+                util.printDOMMessage.show(id, text, "fa-exclamation-triangle", "#FFCB3D");
+            },
+            hide: function (id) {
+                util.printDOMMessage.hide(id);
             }
         }
     };
 
     return {
         /* Initialize function for cards */
-        initialize: function (
-            parentID, ajaxID, noDataFoundMessage, udConfigJSON, items2Submit, bindRefreshOnId, escapeRequired, sanitizeHTML, sanitizeOptions) {
+        initialize: function (parentID, ajaxID, noDataFoundMessage, errMessage, udConfigJSON, items2Submit, bindRefreshOnId, escapeRequired, sanitizeHTML, sanitizeOptions) {
+
+            util.debug.info({
+                "module": "initialize",
+                "parentID": parentID,
+                "ajaxID": ajaxID,
+                "noDataFoundMessage": noDataFoundMessage,
+                "udConfigJSON": udConfigJSON,
+                "items2Submit": items2Submit,
+                "bindRefreshOnId": bindRefreshOnId,
+                "escapeRequired": escapeRequired,
+                "sanitizeHTML": sanitizeHTML,
+                "sanitizeOptions": sanitizeOptions
+            });
+
             var stdConfigJSON = {
                 "cardWidth": 4,
                 "refresh": 0
@@ -192,27 +278,31 @@ var materialCards = (function () {
                 /* try to bind apex refreh event if "apex" exists */
                 try {
                     apex.jQuery("#" + bindRefreshOnId).bind("apexrefresh", function () {
-                        if (container.children('span').length == 0) {
+                        if (container.children("span").length == 0) {
                             getData();
                         }
                     });
                 } catch (e) {
-                    console.log("Can't bind refresh event on " + bindRefreshOnId + ". Apex is missing");
-                    console.log(e);
+                    util.debug.info({
+                        "module": "initialize",
+                        "msg": "Can't bind refresh event on " + bindRefreshOnId + ". Apex is missing",
+                        "err": e
+                    });
                 }
 
                 /* Used to set a refresh via json configuration */
                 if (configJSON.refresh > 0) {
                     setInterval(function () {
-                        if (container.children('span').length == 0) {
+                        if (container.children("span").length == 0) {
                             getData();
                         }
                     }, configJSON.refresh * 1000);
                 }
-
-
             } else {
-                console.log("Can't find parentID: " + parentID);
+                util.debug.info({
+                    "module": "initialize",
+                    "msg": "Can't find parentID: " + parentID
+                });
             }
 
             /***********************************************************************
@@ -248,7 +338,6 @@ var materialCards = (function () {
                     drawCards(cardDataJSON.row, configJSON);
                 } else {
                     container.css("min-height", "");
-
                     util.noDataMessage.show(container, noDataFoundMessage);
                 }
             }
@@ -284,7 +373,7 @@ var materialCards = (function () {
              **
              ***********************************************************************/
             function getData() {
-                if (ajaxID) {
+                if (util.isAPEX()) {
                     util.loader.start(container);
 
                     var submitItems = items2Submit;
@@ -296,22 +385,25 @@ var materialCards = (function () {
                             success: drawCardsRegion,
                             error: function (d) {
                                 container.empty();
-                                console.log(d.responseText);
-                                //container.append("<span>Error occured please check console for more information</span>");
+                                util.errorMessage.show(container, errMessage);
+                                util.debug.error({
+                                    "module": "getData",
+                                    "msg": "Error occured on calling AJAX",
+                                    "d": d
+                                });
                             },
                             dataType: "json"
                         });
                 } else {
                     try {
                         util.loader.start(container);
-                        /* just wait 5 seconds to see loader */
-                        setTimeout(function () {
-                            drawCardsRegion(dataJSON);
-                        }, 500);
-
+                        drawCardsRegion(dataJSON);
                     } catch (e) {
-                        console.log('need data json');
-                        console.log(e);
+                        util.debug.error({
+                            "module": "getData",
+                            "msg": "Need data json",
+                            "err": e
+                        });
                     }
                 }
             }
@@ -354,6 +446,15 @@ var materialCards = (function () {
 
             /***********************************************************************
              **
+             ** Used to generate color style if nothing is set
+             **
+             ***********************************************************************/
+            function generateDefaultCardStyle(pIndex) {
+                return "background: linear-gradient(60deg, hsl(" + (pIndex * 23) % 350 + ", 55%, 60%), hsl(" + (pIndex * 23) % 350 + ", 50%, 60%));box-shadow: 0 12px 20px -10px rgba(230, 230, 230, 0.28), 0 4px 20px 0px rgba(0, 0, 0, 0.12), 0 7px 8px -5px rgba(230, 230, 230, 0.2);";
+            }
+
+            /***********************************************************************
+             **
              ** Used to draw the small cards
              **
              ***********************************************************************/
@@ -384,25 +485,39 @@ var materialCards = (function () {
 
                 /* define card */
                 var card = $("<div></div>");
-                card.addClass("at-card at-card-stats");
+                card.addClass("at-card");
+                card.addClass("at-card-stats");
 
                 /* add icon to card header */
-                if (cardData.CARD_ICON) {
+                if (util.isDefinedAndNotNull(cardData.CARD_ICON)) {
                     /* define card style when nothing is set */
                     var searchString = "fa-";
                     var cardHeader = $("<div></div>");
                     cardHeader.addClass("card-header");
 
+                    if (util.isDefinedAndNotNull(cardData.CARD_HEADER_CLASS)) {
+                        cardHeader.addClass(cardData.CARD_HEADER_CLASS);
+                    }
+
                     var icon = $("<i></i>");
 
                     /* check if it should be an icon or a background image */
                     if (cardData.CARD_ICON && cardData.CARD_ICON.substr(0, searchString.length) === searchString) {
-                        var iconColor = (cardData.CARD_ICON_COLOR != undefined && cardData.CARD_ICON_COLOR.length > 0) ? cardData.CARD_ICON_COLOR : 'white';
-                        var cardStdStyle = 'background: linear-gradient(60deg, hsl(' + (index * 23) % 350 + ', 55%, 60%), hsl(' + (index * 23) % 350 + ', 50%, 60%));box-shadow: 0 12px 20px -10px rgba(230, 230, 230, 0.28), 0 4px 20px 0px rgba(0, 0, 0, 0.12), 0 7px 8px -5px rgba(230, 230, 230, 0.2);';
+                        var iconColor = (util.isDefinedAndNotNull(cardData.CARD_ICON_COLOR)) ? cardData.CARD_ICON_COLOR : "white";
 
-                        icon.addClass("fa " + cardData.CARD_ICON);
+                        icon.addClass("fa");
+                        icon.addClass(cardData.CARD_ICON);
                         icon.css("color", iconColor);
-                        cardHeader.attr("style", cardData.CARD_HEADER_STYLE || cardStdStyle);
+
+                        if (util.isDefinedAndNotNull(cardData.CARD_HEADER_STYLE)) {
+                            /* set header style */
+                            cardHeader.attr("style", cardData.CARD_HEADER_STYLE);
+                        } else {
+                            /* set header style default */
+                            if (!util.isDefinedAndNotNull(cardData.CARD_HEADER_CLASS)) {
+                                cardHeader.attr("style", generateDefaultCardStyle(index));
+                            }
+                        }
                     } else {
                         if (util.isDefinedAndNotNull(cardData.CARD_HEADER_STYLE)) {
                             cardHeader.attr("style", cardData.CARD_HEADER_STYLE);
@@ -480,8 +595,6 @@ var materialCards = (function () {
              **
              ***********************************************************************/
             function drawLargeCard(index, parent, cardData, cardConfig, chartConfig) {
-                /* define card style when nothing is set */
-                var cardStdStyle = 'background: linear-gradient(60deg, hsl(' + (index * 23) % 350 + ', 55%, 60%), hsl(' + (index * 23) % 350 + ', 50%, 60%));box-shadow: 0 12px 20px -10px rgba(230, 230, 230, 0.28), 0 4px 20px 0px rgba(0, 0, 0, 0.12), 0 7px 8px -5px rgba(230, 230, 230, 0.2);';
 
                 /* this html should be added to page */
                 /*  <div class="s-g-col-4">
@@ -514,18 +627,22 @@ var materialCards = (function () {
 
                 /* get chartConfig Json and parse it if needed */
                 var chartConfigJSON = {}
-                if (chartConfig && typeof chartConfig == 'string') {
+                if (chartConfig && typeof chartConfig == "string") {
                     try {
                         chartConfigJSON = JSON.parse(chartConfig);
-
                     } catch (e) {
-                        console.log("Error while try to parse CARD_CHART_CONFIG: " + e + chartConfig);
+                        util.debug.error({
+                            "module": "drawLargeCard",
+                            "msg": "Error while try to parse CARD_CHART_CONFIG",
+                            "err": e,
+                            "chartConfig": chartConfig
+                        });
                     }
                 } else {
                     chartConfigJSON = chartConfig;
                 }
 
-                /* merge config to standard config if something is missing that'S needed */
+                /* merge config to standard config if something is missing that's needed */
                 $.extend(true, standardChartConfig, chartConfigJSON);
 
 
@@ -542,10 +659,22 @@ var materialCards = (function () {
 
                 /* define header */
                 var cardHeader = $("<div></div>");
-                cardHeader.addClass("card-header card-chart");
+                cardHeader.addClass("card-header");
+                cardHeader.addClass("card-chart");
 
-                /* set header style */
-                cardHeader.attr("style", cardData.CARD_HEADER_STYLE || cardStdStyle);
+                if (util.isDefinedAndNotNull(cardData.CARD_HEADER_CLASS)) {
+                    cardHeader.addClass(cardData.CARD_HEADER_CLASS);
+                }
+
+                if (util.isDefinedAndNotNull(cardData.CARD_HEADER_STYLE)) {
+                    /* set header style */
+                    cardHeader.attr("style", cardData.CARD_HEADER_STYLE);
+                } else {
+                    /* set header style default */
+                    if (!util.isDefinedAndNotNull(cardData.CARD_HEADER_CLASS)) {
+                        cardHeader.attr("style", generateDefaultCardStyle(index));
+                    }
+                }
 
                 /* define chart */
                 var chart = $("<div></div>");
@@ -563,12 +692,22 @@ var materialCards = (function () {
                 cardBody.addClass("card-content");
 
                 /* add title to card body */
-                var title = (cardData.CARD_TITLE != undefined && cardData.CARD_TITLE.length > 0) ? cardData.CARD_TITLE : '';
-                cardBody.append('<p class="category">' + title + '</p>');
+                var title = $("<p></p>")
+                title.addClass("category");
+                if (util.isDefinedAndNotNull(cardData.CARD_TITLE)) {
+                    title.html(cardData.CARD_TITLE);
+                }
+                cardBody.append(title);
 
                 /* add card value to body */
-                var value = (cardData.CARD_VALUE != undefined && cardData.CARD_VALUE.length > 0) ? cardData.CARD_VALUE : '-';
-                cardBody.append('<h2 class="title">' + value + '</h2>');
+                var value = $("<h2></h2>");
+                value.addClass("title");
+                if (util.isDefinedAndNotNull(cardData.CARD_VALUE)) {
+                    value.html(cardData.CARD_VALUE);
+                } else {
+                    value.html("-");
+                }
+                cardBody.append(value);
 
                 /* append body to card */
                 card.append(cardBody);
@@ -611,14 +750,16 @@ var materialCards = (function () {
                     var chartData = {}
 
                     /* try to get chart data as json */
-                    if (typeof cardData.CARD_CHART_DATA == 'string') {
+                    if (typeof cardData.CARD_CHART_DATA == "string") {
                         try {
                             chartData = JSON.parse(cardData.CARD_CHART_DATA);
 
                         } catch (e) {
-                            console.log("Error while try to parse CARD_CHART_DATA");
-                            console.log(e);
-                            console.log(cardData.CARD_CHART_DATA);
+                            util.debug.error({
+                                "module": "drawLargeCard",
+                                "msg": "Error while try to parse CARD_CHART_DATA",
+                                "CARD_CHART_DATA": cardData.CARD_CHART_DATA
+                            });
                         }
                     } else {
                         chartData = cardData.CARD_CHART_DATA;
@@ -637,20 +778,26 @@ var materialCards = (function () {
                             chartIst = new Chartist.Pie("#" + chartID, chartData, standardChartConfig);
                             break;
                         default:
-                            console.log("No valid Chart type");
+                            util.debug.info({
+                                "module": "drawLargeCard",
+                                "msg": "No valid Chart type"
+                            });
                     }
 
                     /* style chart */
-                    var iconColor = (cardData.CARD_ICON_COLOR != undefined && cardData.CARD_ICON_COLOR.length > 0) ? cardData.CARD_ICON_COLOR : 'white';
+                    var iconColor = (util.isDefinedAndNotNull(cardData.CARD_ICON_COLOR)) ? cardData.CARD_ICON_COLOR : "white";
 
-                    chartIst.on('draw', function (context) {
+                    chartIst.on("draw", function (context) {
                         var cardChartData = {};
-                        if (cardData.CARD_CHART_DATA && typeof cardData.CARD_CHART_DATA == 'string') {
+                        if (cardData.CARD_CHART_DATA && typeof cardData.CARD_CHART_DATA == "string") {
                             try {
                                 cardChartData = JSON.parse(cardData.CARD_CHART_DATA);
-
                             } catch (e) {
-                                console.log("Error while try to parse CARD_CHART_CONFIG: " + e + chartConfig);
+                                util.debug.error({
+                                    "module": "drawLargeCard",
+                                    "msg": "Error while try to parse CARD_CHART_CONFIG",
+                                    "chartConfig": chartConfig
+                                });
                             }
                         } else {
                             cardChartData = cardData.CARD_CHART_DATA;
@@ -659,30 +806,28 @@ var materialCards = (function () {
                         if (cardChartData.colors) {
                             iconColor = cardChartData.colors[context.index] || cardChartData.colors[0];
                         }
-                        if (context.type === 'bar' || context.type === 'line' || context.type === 'point') {
+                        if (context.type === "bar" || context.type === "line" || context.type === "point") {
 
                             if (standardChartConfig.strokeWidth) {
                                 context.element.attr({
-                                    style: 'stroke:  ' + iconColor + '; stroke-width:' + standardChartConfig.strokeWidth + 'px;'
+                                    style: "stroke:  " + iconColor + "; stroke-width:" + standardChartConfig.strokeWidth + "px;"
                                 });
                             } else {
                                 context.element.attr({
-                                    style: 'stroke:  ' + iconColor
+                                    style: "stroke:  " + iconColor
                                 });
                             }
                         }
 
-                        if (context.type === 'slice') {
+                        if (context.type === "slice") {
                             context.element.attr({
-                                //style: 'fill: hsl(' + context.index * 20 % 350 + ', 50%, 60%)'
-                                style: 'fill: ' + iconColor + '; fill-opacity: ' + ((cardChartData.colors) ? 0.6 : (((context.index) % 10) + 2) / 10)
+                                style: "fill: " + iconColor + "; fill-opacity: " + ((cardChartData.colors) ? 0.6 : (((context.index) % 10) + 2) / 10)
                             });
                         }
 
-                        if (context.type === 'area') {
+                        if (context.type === "area") {
                             context.element.attr({
-                                //style: 'fill: hsl(' + context.index * 20 % 350 + ', 50%, 60%)'
-                                style: 'fill: ' + iconColor + '; fill-opacity: ' + (((context.index) % 10) + 2) / 10
+                                style: "fill: " + iconColor + "; fill-opacity: " + (((context.index) % 10) + 2) / 10
                             });
 
                         }
@@ -692,16 +837,16 @@ var materialCards = (function () {
                                 $(chart).find(".ct-slice-donut").css("stroke-width", standardChartConfig.sliceWidth.toString() + "px");
                             }
                             context.element.attr({
-                                style: 'stroke-opacity: ' + (((-context.index) % 10) + 10) / 10 + '; stroke:  ' + iconColor
+                                style: "stroke-opacity: " + (((-context.index) % 10) + 10) / 10 + "; stroke:  " + iconColor
                             });
-                            $(chart).find(".ct-label").css("stroke", 'initial');
+                            $(chart).find(".ct-label").css("stroke", "initial");
                             $(chart).find(".ct-label").css("fill", ((cardChartData.colors) ? "white" : iconColor));
                         }
                         $(chart).find(".ct-slice-pie").attr("stroke", ((cardChartData.colors) ? "rgba(0,0,0,0)" : iconColor));
                         $(chart).find(".ct-slice-donut").attr("stroke", iconColor);
                         $(chart).find(".ct-label").css("color", ((cardChartData.colors) ? "white" : iconColor));
                         $(chart).find(".ct-grid").css("stroke", ((cardChartData.colors) ? "white" : iconColor));
-                        $(chart).find(".ct-grid").css("opacity", ".4");
+                        $(chart).find(".ct-grid").css("opacity", "0.4");
                     });
                 }
             }
