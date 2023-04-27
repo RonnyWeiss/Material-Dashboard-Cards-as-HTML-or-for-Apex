@@ -1,7 +1,7 @@
 {
     "name": "Material Dashboard Cards",
     "version": "1.5",
-    "description": "These Material Dashboard Card are some nice, responsive and data driven Dashbaord Cards for your HTML Page or as Region Plug-in for Oracle APEX. They can be used as single Value Cards or in a larger Version as Cards with responsive Charts.<p><strong>Short info about \"Commercially Supported\"</strong></p><p><b>Important clarification: My work in the development team of Oracle APEX is in no way related to my open source projects or the plug-ins here on apex.world! All plug-ins are built in my spare time and are not supported by Oracle!</b></p>",
+    "description": "These Material Dashboard Card are some nice, responsive and data driven Dashbaord Cards for your HTML Page or as Region Plug-in for Oracle APEX. They can be used as single Value Cards or in a larger Version as Cards with responsive Charts.<p><b>Important clarification: My work in the development team of Oracle APEX is in no way related to my open source projects or the plug-ins here on apex.world! All plug-ins are built in my spare time and are not supported by Oracle!</b></p>",
     "keywords": ["oracle", "apex", "plugin", "charts", "dashboard", "region", "card", "material", "responsive", "kpi"],
     "homepage": "https://github.com/RonnyWeiss/Material-Dashboard-Cards-as-HTML-or-for-Apex",
     "bugs": {
